@@ -1,0 +1,107 @@
+---
+- hosts: samplehost
+  user: admuser
+  sudo: yes
+  tasks:
+  - name: check exist file
+    stat:
+      path: /usr/bin/node_exporter
+    register: file
+  - name: wget node-expoter
+    get_url:
+      url: https://github.com/prometheus/node_exporter/releases/download/v0.16.0/node_exporter-0.16.0.linux-amd64.tar.gz
+      dest: /tmp/node_exporter-0.16.0.linux-amd64.tar.gz
+  - name: unarchive node-exporter
+    unarchive:
+      src: /tmp/node_exporter-0.16.0.linux-amd64.tar.gz
+      remote_src: yes
+      dest: /tmp/
+  - name: copy node-exporter binary
+    shell: cp /tmp/node_exporter-0.16.0.linux-amd64/node_exporter /usr/bin/node_exporter
+    when: not file.stat.exists
+  - name: create node_exorter dir
+    file:
+     state: directory
+     group: root
+     owner: root
+     path: /usr/local/node_exporter/textfile
+     recurse: yes
+  - name: add system account prometheus
+    user:
+      system: yes
+      name: prometheus
+      state: present
+      home: /var/lib/prometheus
+      shell: /bin/false
+      comment: Prometheus daemon
+  - name: create prometheus home directory
+    file:
+      state: directory
+      path: /var/lib/prometheus
+      mode: 0755
+      group: prometheus
+      owner: prometheus
+  - name: startscript
+    copy:
+      src: /data/ansible/template/node_exporter.sh
+      dest: /usr/local/node_exporter/node_exporter.sh
+      mode: 0777
+      force: no
+      group: root
+      owner: root
+  - name: add init.d.sh
+    copy:
+      src: /data/ansible/template/node_exporter.init.d
+      dest: /etc/init.d/node_exporter
+      mode: 0777
+      force: no
+      group: root
+      owner: root
+  - name: add node_exporter service
+    service:
+      name: node_exporter
+      enabled: yes
+      state: started
+  - name: create node_exorter dir
+    file:
+     state: directory
+     group: root
+     owner: root
+     path: /usr/local/node_exporter/textfile
+     recurse: yes
+  - name: add userlist.sh
+    copy:
+      src: /data/ansible/template/userlist.sh
+      dest: /usr/local/node_exporter/userlist.sh
+      mode: 0740
+      force: no
+      group: root
+      owner: root
+  - name: add cron job userlist
+    cron:
+     name: userlist.sh
+     minute: "*/30"
+     hour: "*"
+     day: "*"
+     month: "*"
+     weekday: "*"
+     job: "/usr/local/node_exporter/userlist.sh"
+     state: present
+  - name: add who.sh
+    copy:
+      src: /data/ansible/template/who.sh
+      dest: /usr/local/node_exporter/who.sh
+      mode: 0740
+      force: no
+      group: root
+      owner: root
+  - name: add cron job wholist
+    cron:
+     name: who.sh
+     minute: "*/5"
+     hour: "*"
+     day: "*"
+     month: "*"
+     weekday: "*"
+     job: "/usr/local/node_exporter/who.sh"
+     state: present
