@@ -1,0 +1,48 @@
+---
+- hosts: samplehost
+  user: admuser
+  sudo: yes
+  tasks:
+   - name: add ius repository 
+     yum: name=https://centos6.iuscommunity.org/ius-release.rpm
+   - name: yum install python35u
+     yum: name={{item}}
+     with_items:
+       - python35u
+       - python35u-devel
+       - python35u-libs
+       - python35u-pip
+       - python35u-setuptools
+
+   - name: Pip install click
+     pip: name=click version=6.7 executable=pip3.5
+   - name: Pip install Flask
+     pip: name=Flask version=0.12.2 executable=pip3.5
+   - name: Pip install itsdangerous
+     pip: name=itsdangerous version=0.24 executable=pip3.5
+   - name: Pip install Jinja2
+     pip: name=Jinja2 version=2.9.6 executable=pip3.5
+   - name: Pip install MarkupSafe
+     pip: name=MarkupSafe version=1.0 executable=pip3.5
+   - name: Pip install numpy
+     pip: name=numpy version=1.12.1 executable=pip3.5
+   - name: Pip install pandas
+     pip: name=pandas version=0.20.1 executable=pip3.5
+   - name: Pip install PyMySQL
+     pip: name=PyMySQL version=0.7.11  executable=pip3.5
+   - name: Pip install python-dateutil
+     pip: name=python-dateutil version=2.6.0 executable=pip3.5
+   - name: Pip install pytz
+     pip: name=pytz version=2017.2 executable=pip3.5
+   - name: Pip install scipy
+     pip: name=scipy version=0.19.0 executable=pip3.5
+   - name: Pip install six
+     pip: name=six version=1.10.0 executable=pip3.5
+   - name: Pip install SQLAlchemy
+     pip: name=SQLAlchemy version=1.1.10 executable=pip3.5
+   - name: Pip install uWSGI
+     pip: name=uWSGI version=2.0.15 executable=pip3.5
+   - name: Pip install virtualenv
+     pip: name=virtualenv version=15.1.0 executable=pip3.5
+   - name: Pip install Werkzeug
+     pip: name=Werkzeug version=0.12.2 executable=pip3.5

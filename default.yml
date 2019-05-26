@@ -1,0 +1,128 @@
+---
+- hosts: samplehost
+  user: admuser
+  sudo: yes
+  tasks:
+#  - name: set timezone to Asia/Tokyo
+#    copy: content='Asia/Tokyo'
+#          dest=/etc/timezone
+#          owner=root
+#          group=root
+#          mode=0744
+#          backup=yes
+#   notify: update timezone
+  - name: timezone to Asia/Tokyo
+    timezone:
+      name: Asia/Tokyo
+  - name: create user devuser
+    user: name=da-ope state=present shell=/bin/bash
+  - name: create .ssh
+    file:
+      path: /home/devuser.ssh/
+      group: devuser
+      owner: devuser
+      mode: 0700
+      state: directory
+  - name: check devuser authorized_keys
+    stat: 
+      path: /home/devuser/.ssh/authorized_keys
+    register: keys
+  - name: create authorized_keys
+    file:
+      path: /home/devuser/.ssh/authorized_keys
+      group: da-ope
+      owner: root
+      mode: 0640
+      state: touch
+    when: not keys.stat.exists
+  - name: sudoers modify
+    lineinfile: 
+      path: /etc/sudoers
+      state: present
+      regexp: "{{ item.match }}"
+      line: "{{ item.line }}"
+    with_items:
+      - { match: 'devuser', line: 'devuser ALL=NOPASSWD: /usr/sbin/service' }
+  - name: download snoopy
+    get_url:
+      url=https://github.com/a2o/snoopy/raw/install/doc/install/bin/snoopy-install.sh
+      dest=/tmp/snoopy-install.sh
+      mode=0755
+  - name: install snoopy requirements pkg
+    yum: name={{ item }}
+    with_items:
+      - git
+      - gcc
+      - gzip
+      - make
+      - socat
+      - tar
+      - wget
+      - screen
+      - openssl
+      - openssl-devel
+      - zip
+  - name: check snoopy bin
+    stat:
+      path: /usr/local/sbin/snoopy-enable
+    register: snoopyfile
+  - name: install snoopy
+    shell: if [ ! -f /usr/local/sbin/snoopy-enable ];then /tmp/snoopy-install.sh stable ; fi
+    when: not snoopyfile.stat.exists
+  - name: setting snoopy.ini01
+    ini_file:
+     dest: /etc/snoopy.ini
+     section: snoopy
+     option: output
+     value: devlog
+  - name: setting snoopy.ini02
+    ini_file:
+     dest: /etc/snoopy.ini
+     section: snoopy
+     option: syslog_facility
+     value: LOCAL5
+  - name: setting snoopy logrotate
+    blockinfile:
+      dest: /etc/logrotate.d/snoopy
+      create: yes
+      block: |
+        /var/log/snoopy.log {
+            missingok
+            rotate 31
+            daily
+            dateext
+            olddir /var/log/backup/
+        }
+  - name: setting snoopy rsyslog
+    blockinfile:
+       dest: /etc/rsyslog.conf
+       backup: yes
+       state: present
+       insertafter: '^#user.*'
+       block: |
+          local5.*			-/var/log/snoopy.log
+    notify: restart rsyslog
+  - name: setting snoopy rsyslog2
+    replace:
+        path: /etc/rsyslog.conf
+        backup: yes
+        regexp: '^\*.\*;auth'
+        replace: '*.*;local5.none;auth'
+  - name: create data directory
+    file:
+      path: /data/
+      group: root
+      owner: root
+      mode: 0777
+      state: directory
+  - name: copy logrotate
+    copy:
+      src: /data/ansible/template/logrotate/rsyslog
+      dest: /etc/logrotate.d/rsyslog
+      force: yes
+  handlers:
+   - name: restart rsyslog
+     service: name=rsyslog state=restarted
+   - name: update timezone
+     command: dpkg-reconfigure --frontend noninteractive tzdata
+

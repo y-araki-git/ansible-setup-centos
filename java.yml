@@ -1,0 +1,8 @@
+---
+- hosts: samplehost
+  user: admuser
+  sudo: yes
+  tasks:
+  - name: yum install java sdk
+    yum: name=java
+

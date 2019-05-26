@@ -1,0 +1,40 @@
+---
+- hosts: samplehost
+  user: admuser
+  become: yes
+  become_user: devuser
+  vars:
+    python_ver: 3.5.3
+  tasks:
+  - name: source .bashrc
+    shell: bash -lc "source /etc/profile.d/pyenv.sh"
+  - name: check version
+    shell: bash -lc "pyenv versions | grep {{ python_ver }}"
+    register: pyenv_version
+    ignore_errors: yes
+    changed_when: False
+  - name: install python
+    shell: bash -lc "pyenv install {{ python_ver }}"
+    when: pyenv_version|failed
+  - name: global setting
+    shell: bash -lc "pyenv global {{ python_ver }}"
+    when: pyenv_version|failed
+  - name: pip install
+    pip: name={{item}} executable=/usr/local/.pyenv/shims/pip
+    with_items:
+      - click
+      - Flask
+      - itsdangerous
+      - Jinja2
+      - MarkupSafe
+      - numpy
+      - pandas
+      - PyMySQL
+      - python-dateutil
+      - pytz
+      - scipy
+      - six
+      - SQLAlchemy
+      - uWSGI
+      - Werkzeug
+    ignore_errors: yes

@@ -1,0 +1,10 @@
+---
+- hosts: samplehost
+  user: admuser
+  sudo: yes
+  tasks:
+  - name: yum install Apache2.2
+    yum: name=httpd
+  - name: restart httpd
+    service: name=httpd state=restarted
+
